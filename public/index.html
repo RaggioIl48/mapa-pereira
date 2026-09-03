@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Mapa de Pereira</title>
+
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <header id="barra-superior">
+    <nav id="ruta"></nav>
+    <button id="btn-ver-comentarios" class="oculto">💬 Ver comentarios de la comuna</button>
+  </header>
+
+  <div id="mapa"></div>
+
+  <aside id="panel-barrio" class="panel-lateral oculto">
+    <button id="cerrar-panel" class="btn-cerrar-panel" title="Cerrar">&times;</button>
+    <h2 id="panel-titulo"></h2>
+
+    <div id="lista-comentarios"></div>
+
+    <form id="form-comentario">
+      <textarea id="texto-comentario" placeholder="Escribe un comentario sobre este barrio..." rows="3" required></textarea>
+      <button type="submit">Guardar comentario</button>
+    </form>
+  </aside>
+
+  <aside id="panel-comuna" class="panel-lateral oculto">
+    <button id="cerrar-panel-comuna" class="btn-cerrar-panel" title="Cerrar">&times;</button>
+    <h2 id="panel-comuna-titulo"></h2>
+
+    <div id="lista-comentarios-comuna"></div>
+  </aside>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

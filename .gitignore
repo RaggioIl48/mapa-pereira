@@ -1,0 +1,12 @@
+node_modules/
+server.log
+
+# Otro proyecto sin relación que vive en esta misma carpeta: no forma
+# parte del mapa de Pereira, así que no se sube a este repositorio.
+classroom-sentinel/
+.venv/
+
+# Los comentarios son datos reales/privados de tus vecinos y direcciones:
+# no se suben a GitHub. Quedan solo en tu computador (y donde despliegues
+# la app). El servidor crea este archivo automáticamente si no existe.
+data/comentarios.json

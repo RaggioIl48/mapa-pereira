@@ -1,0 +1,239 @@
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  font-family: -apple-system, "Segoe UI", Arial, sans-serif;
+}
+
+#barra-superior {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 48px;
+  background: #1f2937;
+  color: white;
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  z-index: 1000;
+}
+
+#ruta {
+  font-size: 15px;
+}
+
+#ruta button {
+  background: #374151;
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-right: 12px;
+  font-size: 14px;
+}
+
+#ruta button:hover {
+  background: #4b5563;
+}
+
+#ruta .separador {
+  margin: 0 6px;
+  opacity: 0.6;
+}
+
+#ruta .nivel-actual {
+  font-weight: 600;
+}
+
+#ruta .enlace {
+  cursor: pointer;
+  text-decoration: underline;
+  opacity: 0.85;
+}
+
+#ruta .enlace:hover {
+  opacity: 1;
+}
+
+#btn-ver-comentarios {
+  margin-left: auto;
+  background: #374151;
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+#btn-ver-comentarios:hover {
+  background: #4b5563;
+}
+
+#mapa {
+  position: absolute;
+  top: 48px;
+  bottom: 0;
+  left: 0;
+  right: 0;
+}
+
+.etiqueta-comuna, .etiqueta-barrio {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  font-weight: 600;
+  color: #1f2937;
+  text-shadow:
+    -1px -1px 0 #fff, 1px -1px 0 #fff,
+    -1px 1px 0 #fff, 1px 1px 0 #fff;
+  white-space: nowrap;
+  text-align: center;
+}
+
+.etiqueta-comuna {
+  font-size: 13px;
+}
+
+.etiqueta-barrio {
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.panel-lateral {
+  position: fixed;
+  top: 48px;
+  bottom: 0;
+  right: 0;
+  width: 340px;
+  max-width: 90vw;
+  background: white;
+  box-shadow: -2px 0 8px rgba(0,0,0,0.15);
+  z-index: 1000;
+  padding: 20px;
+  overflow-y: auto;
+  transition: transform 0.25s ease;
+}
+
+.panel-lateral.oculto {
+  transform: translateX(100%);
+}
+
+.btn-cerrar-panel {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: #6b7280;
+  line-height: 1;
+}
+
+#panel-titulo, #panel-comuna-titulo {
+  margin: 0 30px 16px 0;
+  font-size: 20px;
+  color: #1f2937;
+}
+
+#lista-comentarios, #lista-comentarios-comuna {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.comentario-barrio {
+  font-size: 13px;
+  font-weight: 700;
+  color: #2563eb;
+  margin-bottom: 4px;
+}
+
+.comentario-clicable {
+  cursor: pointer;
+}
+
+.comentario-clicable:hover {
+  background: #e5e7eb;
+}
+
+.comentario-vacio {
+  color: #9ca3af;
+  font-style: italic;
+  font-size: 14px;
+}
+
+.comentario {
+  background: #f3f4f6;
+  border-radius: 6px;
+  padding: 10px 12px;
+  position: relative;
+}
+
+.comentario-fecha {
+  font-size: 12px;
+  color: #6b7280;
+  margin-bottom: 4px;
+}
+
+.comentario-texto {
+  font-size: 14px;
+  color: #1f2937;
+  white-space: pre-wrap;
+  margin: 0;
+}
+
+.comentario-borrar {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: none;
+  border: none;
+  color: #ef4444;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.comentario-borrar:hover {
+  text-decoration: underline;
+}
+
+#form-comentario {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border-top: 1px solid #e5e7eb;
+  padding-top: 16px;
+}
+
+#texto-comentario {
+  font-family: inherit;
+  font-size: 14px;
+  padding: 8px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  resize: vertical;
+}
+
+#form-comentario button {
+  background: #2563eb;
+  color: white;
+  border: none;
+  padding: 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+#form-comentario button:hover {
+  background: #1d4ed8;
+}

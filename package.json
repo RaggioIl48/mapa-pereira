@@ -1,0 +1,13 @@
+{
+  "name": "mapa-pereira",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Mapa interactivo de comunas y barrios de Pereira con comentarios",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2"
+  }
+}
