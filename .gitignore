@@ -1,6 +1,9 @@
 node_modules/
 server.log
 
+# Claves de acceso a la base de datos (Upstash): nunca se suben a GitHub
+.env
+
 # Otro proyecto sin relación que vive en esta misma carpeta: no forma
 # parte del mapa de Pereira, así que no se sube a este repositorio.
 classroom-sentinel/
