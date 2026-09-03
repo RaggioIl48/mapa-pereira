@@ -196,19 +196,50 @@ html, body {
   margin: 0;
 }
 
-.comentario-borrar {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  background: none;
-  border: none;
-  color: #ef4444;
-  cursor: pointer;
-  font-size: 13px;
+.comentario-acciones {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  margin-bottom: 6px;
 }
 
-.comentario-borrar:hover {
+.comentario-accion {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 13px;
+  padding: 0;
+  color: #4b5563;
+}
+
+.comentario-accion:hover {
   text-decoration: underline;
+}
+
+.comentario-borrar {
+  color: #ef4444;
+}
+
+.comentario-guardar {
+  color: #2563eb;
+  font-weight: 600;
+}
+
+.comentario-guardar:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.comentario-editar-texto {
+  width: 100%;
+  box-sizing: border-box;
+  font-family: inherit;
+  font-size: 14px;
+  padding: 8px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  resize: vertical;
+  margin-bottom: 8px;
 }
 
 #form-comentario {

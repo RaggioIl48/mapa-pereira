@@ -40,32 +40,44 @@ function esperar(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-async function llamarRedis(comando, intento = 1) {
+// IMPORTANTE: el valor a guardar va siempre en el cuerpo de la petición
+// (POST), nunca metido en la URL. Meter un texto largo (con comillas,
+// tildes, saltos de línea, etc.) como parte de la URL hace que Upstash
+// a veces lo guarde codificado en vez de decodificarlo -- eso corrompió
+// los comentarios la primera vez que se probó a borrar uno.
+async function llamarRedis(ruta, opciones = {}, intento = 1) {
   try {
-    const respuesta = await fetch(`${REDIS_URL}/${comando.map(encodeURIComponent).join('/')}`, {
-      headers: { Authorization: `Bearer ${REDIS_TOKEN}` },
+    const respuesta = await fetch(`${REDIS_URL}${ruta}`, {
+      method: opciones.body ? 'POST' : 'GET',
+      headers: {
+        Authorization: `Bearer ${REDIS_TOKEN}`,
+        ...(opciones.body ? { 'Content-Type': 'text/plain' } : {}),
+      },
+      body: opciones.body,
     });
     const datos = await respuesta.json();
     if (datos.error) throw new Error(datos.error);
     return datos.result;
   } catch (error) {
-    // Reintenta una vez ante un corte de red pasajero antes de rendirse
+    // Reintenta ante un corte de red pasajero antes de rendirse
     if (intento < 3) {
       await esperar(300 * intento);
-      return llamarRedis(comando, intento + 1);
+      return llamarRedis(ruta, opciones, intento + 1);
     }
     throw error;
   }
 }
 
 async function leerComentarios() {
-  const crudo = await llamarRedis(['get', LLAVE_COMENTARIOS]);
+  const crudo = await llamarRedis(`/get/${encodeURIComponent(LLAVE_COMENTARIOS)}`);
   if (!crudo) return {};
   return JSON.parse(crudo);
 }
 
 async function guardarComentarios(datos) {
-  await llamarRedis(['set', LLAVE_COMENTARIOS, JSON.stringify(datos)]);
+  await llamarRedis(`/set/${encodeURIComponent(LLAVE_COMENTARIOS)}`, {
+    body: JSON.stringify(datos),
+  });
 }
 
 app.use(express.json());
@@ -120,6 +132,34 @@ app.post('/api/comentarios/:idBarrio', async (req, res) => {
   } catch (e) {
     console.error('Error guardando comentario en Upstash:', e);
     res.status(502).json({ error: 'No se pudo guardar el comentario en la base de datos.', detalle: e.message });
+  }
+});
+
+// Editar el texto de un comentario existente
+app.put('/api/comentarios/:idBarrio/:id', async (req, res) => {
+  const texto = (req.body.texto || '').trim();
+  if (!texto) {
+    return res.status(400).json({ error: 'El comentario no puede estar vacío' });
+  }
+
+  try {
+    const todos = await leerComentarios();
+    const idBarrio = req.params.idBarrio;
+    const lista = todos[idBarrio] || [];
+    const comentario = lista.find((c) => c.id === req.params.id);
+
+    if (!comentario) {
+      return res.status(404).json({ error: 'Comentario no encontrado' });
+    }
+
+    comentario.texto = texto;
+    comentario.fechaEdicion = new Date().toISOString();
+    await guardarComentarios(todos);
+
+    res.json(comentario);
+  } catch (e) {
+    console.error('Error editando comentario en Upstash:', e);
+    res.status(502).json({ error: 'No se pudo editar el comentario en la base de datos.', detalle: e.message });
   }
 });
 

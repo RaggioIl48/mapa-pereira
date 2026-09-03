@@ -366,27 +366,95 @@ function renderizarComentarios(idBarrio, comentarios) {
     .slice()
     .reverse()
     .forEach((comentario) => {
-      const div = document.createElement('div');
-      div.className = 'comentario';
-
-      const fecha = document.createElement('div');
-      fecha.className = 'comentario-fecha';
-      fecha.textContent = formatearFecha(comentario.fecha);
-
-      const texto = document.createElement('p');
-      texto.className = 'comentario-texto';
-      texto.textContent = comentario.texto;
-
-      const borrar = document.createElement('button');
-      borrar.className = 'comentario-borrar';
-      borrar.textContent = 'Borrar';
-      borrar.addEventListener('click', () => borrarComentario(idBarrio, comentario.id));
-
-      div.appendChild(borrar);
-      div.appendChild(fecha);
-      div.appendChild(texto);
-      contenedor.appendChild(div);
+      contenedor.appendChild(crearElementoComentario(idBarrio, comentario));
     });
+}
+
+// Crea el bloque de un comentario. Alterna entre modo "ver" y modo
+// "editar" sin recargar nada del servidor hasta que se guarda de verdad.
+function crearElementoComentario(idBarrio, comentario) {
+  const div = document.createElement('div');
+  div.className = 'comentario';
+
+  function mostrarVista() {
+    div.innerHTML = '';
+
+    const acciones = document.createElement('div');
+    acciones.className = 'comentario-acciones';
+
+    const editar = document.createElement('button');
+    editar.className = 'comentario-accion';
+    editar.textContent = 'Editar';
+    editar.addEventListener('click', mostrarEdicion);
+
+    const borrar = document.createElement('button');
+    borrar.className = 'comentario-accion comentario-borrar';
+    borrar.textContent = 'Borrar';
+    borrar.addEventListener('click', () => borrarComentario(idBarrio, comentario.id));
+
+    acciones.appendChild(editar);
+    acciones.appendChild(borrar);
+
+    const fecha = document.createElement('div');
+    fecha.className = 'comentario-fecha';
+    fecha.textContent = formatearFecha(comentario.fecha) + (comentario.fechaEdicion ? ' (editado)' : '');
+
+    const texto = document.createElement('p');
+    texto.className = 'comentario-texto';
+    texto.textContent = comentario.texto;
+
+    div.appendChild(acciones);
+    div.appendChild(fecha);
+    div.appendChild(texto);
+  }
+
+  function mostrarEdicion() {
+    div.innerHTML = '';
+
+    const textarea = document.createElement('textarea');
+    textarea.className = 'comentario-editar-texto';
+    textarea.value = comentario.texto;
+    textarea.rows = 3;
+
+    const acciones = document.createElement('div');
+    acciones.className = 'comentario-acciones';
+
+    const guardar = document.createElement('button');
+    guardar.className = 'comentario-accion comentario-guardar';
+    guardar.textContent = 'Guardar cambios';
+    guardar.addEventListener('click', () => {
+      const nuevoTexto = textarea.value.trim();
+      if (!nuevoTexto) return;
+      guardar.disabled = true;
+      guardar.textContent = 'Guardando…';
+      leerRespuesta(fetch(`/api/comentarios/${idBarrio}/${comentario.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ texto: nuevoTexto }),
+      }))
+        .then(() => cargarComentarios(idBarrio))
+        .catch((error) => {
+          window.alert('No se pudo guardar la edición: ' + error.message);
+          guardar.disabled = false;
+          guardar.textContent = 'Guardar cambios';
+        });
+    });
+
+    const cancelar = document.createElement('button');
+    cancelar.className = 'comentario-accion';
+    cancelar.textContent = 'Cancelar';
+    cancelar.addEventListener('click', mostrarVista);
+
+    acciones.appendChild(guardar);
+    acciones.appendChild(cancelar);
+
+    div.appendChild(textarea);
+    div.appendChild(acciones);
+    textarea.focus();
+  }
+
+  mostrarVista();
+  return div;
 }
 
 function formatearFecha(isoString) {
