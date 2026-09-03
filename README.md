@@ -17,12 +17,20 @@ registrar afectaciones por inundaciones, sismos, etc.).
    ver todos sus comentarios en una sola lista.
 
 Los datos de comunas y barrios vienen del portal de datos abiertos del
-municipio de Pereira (ArcGIS). Los comentarios se guardan en un archivo
-(`data/comentarios.json`) en el servidor.
+municipio de Pereira (ArcGIS). Los comentarios se guardan en una base de
+datos gratuita en la nube ([Upstash](https://upstash.com), un Redis con
+API REST) — así sobreviven aunque el servidor se reinicie o se duerma
+por inactividad, algo que pasa seguido en hostings gratuitos como Render.
 
 ## Cómo ejecutarlo en tu computador
 
-Necesitas tener [Node.js](https://nodejs.org) instalado.
+Necesitas tener [Node.js](https://nodejs.org) instalado, y una base de
+datos gratuita en [upstash.com](https://upstash.com) (crea una cuenta,
+luego "Create Database" → tipo "Regional"; copia el `UPSTASH_REDIS_REST_URL`
+y el `UPSTASH_REDIS_REST_TOKEN` de la sección "REST API").
+
+Copia `.env.example` a un archivo nuevo llamado `.env` y pega ahí esos
+dos valores (ese archivo nunca se sube a GitHub).
 
 ```bash
 npm install
@@ -34,11 +42,11 @@ Luego abre `http://localhost:3000` en tu navegador.
 ## Estructura del proyecto
 
 ```
-server.js              → backend (Express): sirve la página y la API de comentarios
+server.js              → backend (Express): sirve la página, la API de comentarios y habla con Upstash
+.env                    → tus claves de Upstash (no se sube a GitHub, ver .env.example)
 data/
   comunas.geojson       → dibujo de las comunas
   barrios.geojson        → dibujo de los barrios
-  comentarios.json       → comentarios guardados (no se sube a GitHub, ver .gitignore)
 public/
   index.html
   css/style.css
@@ -67,4 +75,8 @@ desplegarlo en un servicio de hosting que ejecute Node.js, por ejemplo
 1. Crea una cuenta en Render (o el hosting que prefieras).
 2. "New Web Service" → conecta este repositorio de GitHub.
 3. Comando de build: `npm install`. Comando de arranque: `npm start`.
-4. Render te da un link público (algo como `https://tu-app.onrender.com`).
+4. **Importante:** en la pestaña "Environment" del servicio en Render,
+   agrega las mismas dos variables del `.env` (`UPSTASH_REDIS_REST_URL`
+   y `UPSTASH_REDIS_REST_TOKEN`) — si no, los comentarios no se van a
+   poder guardar ahí tampoco.
+5. Render te da un link público (algo como `https://tu-app.onrender.com`).
