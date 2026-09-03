@@ -48,7 +48,12 @@ const estado = {
 Promise.all([
   fetch('/data/comunas.geojson').then((r) => r.json()),
   fetch('/data/barrios.geojson').then((r) => r.json()),
-  fetch('/api/comentarios').then((r) => r.json()),
+  leerRespuesta(fetch('/api/comentarios')).catch((error) => {
+    // Si falla solo la carga de comentarios (por ejemplo, la base de
+    // datos no responde), igual mostramos el mapa, sin iconos de comentarios
+    window.alert('No se pudieron cargar los comentarios guardados: ' + error.message);
+    return {};
+  }),
 ]).then(([comunas, barrios, comentarios]) => {
   estado.comunas = comunas;
   estado.barrios = barrios;
@@ -304,9 +309,34 @@ document.getElementById('cerrar-panel').addEventListener('click', () => {
   }
 });
 
+// Convierte una respuesta de fetch en su JSON, o lanza un error legible
+// si el servidor respondió con un problema (para no fallar en silencio)
+async function leerRespuesta(promesaFetch) {
+  let respuesta;
+  try {
+    respuesta = await promesaFetch;
+  } catch (e) {
+    throw new Error('No se pudo conectar con el servidor. Revisa tu conexión e intenta de nuevo.');
+  }
+
+  let cuerpo = null;
+  try {
+    cuerpo = await respuesta.json();
+  } catch (e) {
+    // Respuestas sin cuerpo (por ejemplo, un borrado exitoso) son normales
+  }
+
+  if (!respuesta.ok) {
+    let mensaje = (cuerpo && cuerpo.error) || `Error del servidor (código ${respuesta.status})`;
+    if (cuerpo && cuerpo.detalle) mensaje += ' — ' + cuerpo.detalle;
+    throw new Error(mensaje);
+  }
+
+  return cuerpo;
+}
+
 function cargarComentarios(idBarrio) {
-  fetch(`/api/comentarios/${idBarrio}`)
-    .then((r) => r.json())
+  leerRespuesta(fetch(`/api/comentarios/${idBarrio}`))
     .then((comentarios) => {
       renderizarComentarios(idBarrio, comentarios);
 
@@ -317,6 +347,9 @@ function cargarComentarios(idBarrio) {
       if (!document.getElementById('panel-comuna').classList.contains('oculto')) {
         renderizarComentariosComuna();
       }
+    })
+    .catch((error) => {
+      window.alert('No se pudieron cargar los comentarios: ' + error.message);
     });
 }
 
@@ -375,22 +408,37 @@ document.getElementById('form-comentario').addEventListener('submit', (evento) =
   const texto = textarea.value.trim();
   if (!texto) return;
 
-  fetch(`/api/comentarios/${estado.barrioActual.idBarrio}`, {
+  const boton = evento.target.querySelector('button[type="submit"]');
+  const textoOriginalBoton = boton.textContent;
+  boton.disabled = true;
+  boton.textContent = 'Guardando…';
+
+  leerRespuesta(fetch(`/api/comentarios/${estado.barrioActual.idBarrio}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ texto }),
-  })
-    .then((r) => r.json())
+  }))
     .then(() => {
       textarea.value = '';
       cargarComentarios(estado.barrioActual.idBarrio);
+    })
+    .catch((error) => {
+      window.alert('No se pudo guardar el comentario: ' + error.message);
+    })
+    .finally(() => {
+      boton.disabled = false;
+      boton.textContent = textoOriginalBoton;
     });
 });
 
 function borrarComentario(idBarrio, id) {
-  fetch(`/api/comentarios/${idBarrio}/${id}`, { method: 'DELETE' }).then(() => {
-    cargarComentarios(idBarrio);
-  });
+  leerRespuesta(fetch(`/api/comentarios/${idBarrio}/${id}`, { method: 'DELETE' }))
+    .then(() => {
+      cargarComentarios(idBarrio);
+    })
+    .catch((error) => {
+      window.alert('No se pudo borrar el comentario: ' + error.message);
+    });
 }
 
 // ---------- Panel: todos los comentarios de la comuna actual ----------

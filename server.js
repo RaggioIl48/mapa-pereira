@@ -27,6 +27,9 @@ if (!REDIS_URL || !REDIS_TOKEN) {
     'AVISO: faltan UPSTASH_REDIS_REST_URL / UPSTASH_REDIS_REST_TOKEN. ' +
     'Los comentarios no se van a poder guardar hasta que configures esas variables.'
   );
+} else {
+  // No imprime la clave, solo confirma que se cargaron bien las variables
+  console.log(`Upstash configurado: URL=${REDIS_URL} (token de ${REDIS_TOKEN.length} caracteres)`);
 }
 
 // ---------- Guardado de comentarios (Upstash Redis, vía su API REST) ----------
@@ -75,7 +78,8 @@ app.get('/api/comentarios', async (req, res) => {
   try {
     res.json(await leerComentarios());
   } catch (e) {
-    res.status(502).json({ error: 'No se pudo conectar con la base de datos de comentarios.' });
+    console.error('Error leyendo comentarios de Upstash:', e);
+    res.status(502).json({ error: 'No se pudo conectar con la base de datos de comentarios.', detalle: e.message });
   }
 });
 
@@ -87,7 +91,8 @@ app.get('/api/comentarios/:idBarrio', async (req, res) => {
     const todos = await leerComentarios();
     res.json(todos[req.params.idBarrio] || []);
   } catch (e) {
-    res.status(502).json({ error: 'No se pudo conectar con la base de datos de comentarios.' });
+    console.error('Error leyendo comentarios de Upstash:', e);
+    res.status(502).json({ error: 'No se pudo conectar con la base de datos de comentarios.', detalle: e.message });
   }
 });
 
@@ -113,7 +118,8 @@ app.post('/api/comentarios/:idBarrio', async (req, res) => {
 
     res.status(201).json(nuevoComentario);
   } catch (e) {
-    res.status(502).json({ error: 'No se pudo guardar el comentario en la base de datos.' });
+    console.error('Error guardando comentario en Upstash:', e);
+    res.status(502).json({ error: 'No se pudo guardar el comentario en la base de datos.', detalle: e.message });
   }
 });
 
@@ -133,7 +139,8 @@ app.delete('/api/comentarios/:idBarrio/:id', async (req, res) => {
     await guardarComentarios(todos);
     res.status(204).end();
   } catch (e) {
-    res.status(502).json({ error: 'No se pudo borrar el comentario en la base de datos.' });
+    console.error('Error borrando comentario en Upstash:', e);
+    res.status(502).json({ error: 'No se pudo borrar el comentario en la base de datos.', detalle: e.message });
   }
 });
 
