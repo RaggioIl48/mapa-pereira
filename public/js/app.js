@@ -15,6 +15,14 @@ function colorPorIndice(i) {
   return PALETA[i % PALETA.length];
 }
 
+// El campo CODBAR del archivo de barrios NO es único (varios barrios
+// distintos comparten el mismo código, incluso vacío). Por eso usamos el
+// FID -- el identificador interno del archivo, que sí es único por barrio
+// -- como llave para guardar los comentarios.
+function idDeBarrio(feature) {
+  return String(feature.properties.FID);
+}
+
 const mapa = L.map('mapa').setView(CENTRO_PEREIRA, ZOOM_INICIAL);
 
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -31,8 +39,8 @@ const estado = {
   capaComunas: null,
   capaBarrios: null,
   comunaActual: null, // { codcom, nombre }
-  barrioActual: null, // { codbar, nombre }
-  resumenComentarios: {}, // { codbar: [comentario, ...] }, para saber quién tiene comentarios
+  barrioActual: null, // { idBarrio, nombre }
+  resumenComentarios: {}, // { idBarrio: [comentario, ...] }, para saber quién tiene comentarios
 };
 
 // ---------- Carga inicial de datos ----------
@@ -50,13 +58,13 @@ Promise.all([
 
 // ---------- Iconos de "tiene comentarios" ----------
 
-function tieneComentarios(codbar) {
-  return (estado.resumenComentarios[codbar] || []).length > 0;
+function tieneComentarios(idBarrio) {
+  return (estado.resumenComentarios[idBarrio] || []).length > 0;
 }
 
 function comunaTieneComentarios(codcom) {
   return estado.barrios.features.some(
-    (f) => f.properties.CODCOM === codcom && tieneComentarios(f.properties.CODBAR)
+    (f) => f.properties.CODCOM === codcom && tieneComentarios(idDeBarrio(f))
   );
 }
 
@@ -74,17 +82,18 @@ function actualizarIconos() {
   }
   if (estado.capaBarrios) {
     estado.capaBarrios.eachLayer((layer) => {
-      const { CODBAR, NOMBRE } = layer.feature.properties;
-      layer.setTooltipContent(etiquetaConIcono(NOMBRE, tieneComentarios(CODBAR)));
+      layer.setTooltipContent(
+        etiquetaConIcono(layer.feature.properties.NOMBRE, tieneComentarios(idDeBarrio(layer.feature)))
+      );
     });
   }
 }
 
-function encontrarLayerBarrio(codbar) {
+function encontrarLayerBarrio(idBarrio) {
   if (!estado.capaBarrios) return null;
   let encontrado = null;
   estado.capaBarrios.eachLayer((l) => {
-    if (l.feature.properties.CODBAR === codbar) encontrado = l;
+    if (idDeBarrio(l.feature) === idBarrio) encontrado = l;
   });
   return encontrado;
 }
@@ -160,7 +169,7 @@ function entrarAComuna(feature) {
     style: (feature) => estiloBarrio(feature, barriosDeLaComuna.features),
     onEachFeature: (feature, layer) => {
       layer.bindTooltip(
-        etiquetaConIcono(feature.properties.NOMBRE, tieneComentarios(feature.properties.CODBAR)),
+        etiquetaConIcono(feature.properties.NOMBRE, tieneComentarios(idDeBarrio(feature))),
         { permanent: true, direction: 'center', className: 'etiqueta-barrio' }
       );
       layer.on('click', () => entrarABarrio(feature, layer));
@@ -180,7 +189,7 @@ function estiloBarrio(feature, listaBarrios) {
   const indice = listaBarrios.indexOf(feature);
   const esSeleccionado =
     estado.barrioActual &&
-    estado.barrioActual.codbar === feature.properties.CODBAR;
+    estado.barrioActual.idBarrio === idDeBarrio(feature);
   return {
     color: esSeleccionado ? '#111827' : '#374151',
     weight: esSeleccionado ? 3 : 1,
@@ -201,7 +210,7 @@ function restaurarEstiloBarrio(layer, feature) {
 function entrarABarrio(feature, layer) {
   estado.vista = 'barrio';
   estado.barrioActual = {
-    codbar: feature.properties.CODBAR,
+    idBarrio: idDeBarrio(feature),
     nombre: feature.properties.NOMBRE,
   };
   cerrarPanelComuna();
@@ -278,7 +287,7 @@ function volverAtras() {
 function abrirPanel(barrio) {
   document.getElementById('panel-titulo').textContent = barrio.nombre;
   document.getElementById('panel-barrio').classList.remove('oculto');
-  cargarComentarios(barrio.codbar);
+  cargarComentarios(barrio.idBarrio);
 }
 
 function cerrarPanel() {
@@ -295,15 +304,15 @@ document.getElementById('cerrar-panel').addEventListener('click', () => {
   }
 });
 
-function cargarComentarios(codbar) {
-  fetch(`/api/comentarios/${codbar}`)
+function cargarComentarios(idBarrio) {
+  fetch(`/api/comentarios/${idBarrio}`)
     .then((r) => r.json())
     .then((comentarios) => {
-      renderizarComentarios(codbar, comentarios);
+      renderizarComentarios(idBarrio, comentarios);
 
       // Actualiza el resumen global para que los iconos 💬 y el panel de
       // "comentarios de la comuna" queden al día
-      estado.resumenComentarios[codbar] = comentarios;
+      estado.resumenComentarios[idBarrio] = comentarios;
       actualizarIconos();
       if (!document.getElementById('panel-comuna').classList.contains('oculto')) {
         renderizarComentariosComuna();
@@ -311,7 +320,7 @@ function cargarComentarios(codbar) {
     });
 }
 
-function renderizarComentarios(codbar, comentarios) {
+function renderizarComentarios(idBarrio, comentarios) {
   const contenedor = document.getElementById('lista-comentarios');
 
   if (comentarios.length === 0) {
@@ -338,7 +347,7 @@ function renderizarComentarios(codbar, comentarios) {
       const borrar = document.createElement('button');
       borrar.className = 'comentario-borrar';
       borrar.textContent = 'Borrar';
-      borrar.addEventListener('click', () => borrarComentario(codbar, comentario.id));
+      borrar.addEventListener('click', () => borrarComentario(idBarrio, comentario.id));
 
       div.appendChild(borrar);
       div.appendChild(fecha);
@@ -366,7 +375,7 @@ document.getElementById('form-comentario').addEventListener('submit', (evento) =
   const texto = textarea.value.trim();
   if (!texto) return;
 
-  fetch(`/api/comentarios/${estado.barrioActual.codbar}`, {
+  fetch(`/api/comentarios/${estado.barrioActual.idBarrio}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ texto }),
@@ -374,13 +383,13 @@ document.getElementById('form-comentario').addEventListener('submit', (evento) =
     .then((r) => r.json())
     .then(() => {
       textarea.value = '';
-      cargarComentarios(estado.barrioActual.codbar);
+      cargarComentarios(estado.barrioActual.idBarrio);
     });
 });
 
-function borrarComentario(codbar, id) {
-  fetch(`/api/comentarios/${codbar}/${id}`, { method: 'DELETE' }).then(() => {
-    cargarComentarios(codbar);
+function borrarComentario(idBarrio, id) {
+  fetch(`/api/comentarios/${idBarrio}/${id}`, { method: 'DELETE' }).then(() => {
+    cargarComentarios(idBarrio);
   });
 }
 
@@ -410,9 +419,9 @@ function renderizarComentariosComuna() {
   // Junta todos los comentarios de todos los barrios de esta comuna
   let items = [];
   barriosDeLaComuna.forEach((f) => {
-    const codbar = f.properties.CODBAR;
-    (estado.resumenComentarios[codbar] || []).forEach((comentario) => {
-      items.push({ codbar, nombreBarrio: f.properties.NOMBRE, comentario });
+    const idBarrio = idDeBarrio(f);
+    (estado.resumenComentarios[idBarrio] || []).forEach((comentario) => {
+      items.push({ idBarrio, nombreBarrio: f.properties.NOMBRE, comentario });
     });
   });
 
@@ -447,7 +456,7 @@ function renderizarComentariosComuna() {
     div.appendChild(texto);
 
     div.addEventListener('click', () => {
-      const layer = encontrarLayerBarrio(item.codbar);
+      const layer = encontrarLayerBarrio(item.idBarrio);
       if (layer) entrarABarrio(layer.feature, layer);
     });
 

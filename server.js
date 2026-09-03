@@ -29,46 +29,48 @@ app.get('/api/comentarios', (req, res) => {
   res.json(leerComentarios());
 });
 
-// Obtener los comentarios de un barrio (identificado por su CODBAR)
-app.get('/api/comentarios/:codbar', (req, res) => {
+// Obtener los comentarios de un barrio (identificado por su FID: el
+// CODBAR del archivo de barrios no es único entre barrios, así que no
+// sirve como identificador)
+app.get('/api/comentarios/:idBarrio', (req, res) => {
   const todos = leerComentarios();
-  res.json(todos[req.params.codbar] || []);
+  res.json(todos[req.params.idBarrio] || []);
 });
 
 // Agregar un comentario nuevo a un barrio
-app.post('/api/comentarios/:codbar', (req, res) => {
+app.post('/api/comentarios/:idBarrio', (req, res) => {
   const texto = (req.body.texto || '').trim();
   if (!texto) {
     return res.status(400).json({ error: 'El comentario no puede estar vacío' });
   }
 
   const todos = leerComentarios();
-  const codbar = req.params.codbar;
-  if (!todos[codbar]) todos[codbar] = [];
+  const idBarrio = req.params.idBarrio;
+  if (!todos[idBarrio]) todos[idBarrio] = [];
 
   const nuevoComentario = {
     id: crypto.randomUUID(),
     texto,
     fecha: new Date().toISOString(),
   };
-  todos[codbar].push(nuevoComentario);
+  todos[idBarrio].push(nuevoComentario);
   guardarComentarios(todos);
 
   res.status(201).json(nuevoComentario);
 });
 
 // Borrar un comentario de un barrio
-app.delete('/api/comentarios/:codbar/:id', (req, res) => {
+app.delete('/api/comentarios/:idBarrio/:id', (req, res) => {
   const todos = leerComentarios();
-  const codbar = req.params.codbar;
-  const lista = todos[codbar] || [];
+  const idBarrio = req.params.idBarrio;
+  const lista = todos[idBarrio] || [];
   const nuevaLista = lista.filter((c) => c.id !== req.params.id);
 
   if (nuevaLista.length === lista.length) {
     return res.status(404).json({ error: 'Comentario no encontrado' });
   }
 
-  todos[codbar] = nuevaLista;
+  todos[idBarrio] = nuevaLista;
   guardarComentarios(todos);
   res.status(204).end();
 });

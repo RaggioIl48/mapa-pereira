@@ -9,6 +9,10 @@ html, body {
   font-family: -apple-system, "Segoe UI", Arial, sans-serif;
 }
 
+/* .panel-lateral usa su propia regla .oculto (con animación de deslizar);
+   todo lo demás simplemente se oculta */
+.oculto:not(.panel-lateral) { display: none; }
+
 #barra-superior {
   position: fixed;
   top: 0;
