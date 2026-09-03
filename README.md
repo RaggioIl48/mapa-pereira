@@ -45,7 +45,17 @@ public/
   js/app.js              → toda la lógica del mapa (Leaflet.js)
 ```
 
-## Publicarlo en internet
+## Versión pública (Atlas de Pereira)
+
+Existe una segunda versión de esta app, pensada solo para compartir por
+internet, publicada como un "Artifact" de Claude (no vive en este
+repositorio de GitHub, sino en `scratchpad/atlas-pereira.html` + su
+plantilla). Usa un diseño propio y guarda los comentarios re-publicando
+la propia página en vez de un servidor Node — así no depende de que tu
+computador esté prendido. El acceso de lectura/escritura para otras
+personas depende de cómo compartas ese link desde claude.ai.
+
+## Publicarlo en internet (esta versión, la de GitHub)
 
 Este proyecto tiene un backend (Node/Express) que necesita estar
 "corriendo" todo el tiempo para guardar comentarios de verdad. Por eso
