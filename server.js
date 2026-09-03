@@ -40,20 +40,20 @@ function esperar(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-// IMPORTANTE: el valor a guardar va siempre en el cuerpo de la petición
-// (POST), nunca metido en la URL. Meter un texto largo (con comillas,
-// tildes, saltos de línea, etc.) como parte de la URL hace que Upstash
-// a veces lo guarde codificado en vez de decodificarlo -- eso corrompió
-// los comentarios la primera vez que se probó a borrar uno.
-async function llamarRedis(ruta, opciones = {}, intento = 1) {
+// IMPORTANTE: el comando completo (incluido el valor a guardar) se manda
+// como un arreglo JSON en el cuerpo de una sola petición POST a la raíz
+// de la API -- es la forma "pipeline" que recomienda Upstash, y evita
+// los problemas de codificación de meter el comando en la URL (eso
+// corrompió los comentarios la primera vez que se probó a borrar uno).
+async function llamarRedis(comando, intento = 1) {
   try {
-    const respuesta = await fetch(`${REDIS_URL}${ruta}`, {
-      method: opciones.body ? 'POST' : 'GET',
+    const respuesta = await fetch(REDIS_URL, {
+      method: 'POST',
       headers: {
         Authorization: `Bearer ${REDIS_TOKEN}`,
-        ...(opciones.body ? { 'Content-Type': 'text/plain' } : {}),
+        'Content-Type': 'application/json',
       },
-      body: opciones.body,
+      body: JSON.stringify(comando),
     });
     const datos = await respuesta.json();
     if (datos.error) throw new Error(datos.error);
@@ -62,22 +62,20 @@ async function llamarRedis(ruta, opciones = {}, intento = 1) {
     // Reintenta ante un corte de red pasajero antes de rendirse
     if (intento < 3) {
       await esperar(300 * intento);
-      return llamarRedis(ruta, opciones, intento + 1);
+      return llamarRedis(comando, intento + 1);
     }
     throw error;
   }
 }
 
 async function leerComentarios() {
-  const crudo = await llamarRedis(`/get/${encodeURIComponent(LLAVE_COMENTARIOS)}`);
+  const crudo = await llamarRedis(['GET', LLAVE_COMENTARIOS]);
   if (!crudo) return {};
   return JSON.parse(crudo);
 }
 
 async function guardarComentarios(datos) {
-  await llamarRedis(`/set/${encodeURIComponent(LLAVE_COMENTARIOS)}`, {
-    body: JSON.stringify(datos),
-  });
+  await llamarRedis(['SET', LLAVE_COMENTARIOS, JSON.stringify(datos)]);
 }
 
 app.use(express.json());
